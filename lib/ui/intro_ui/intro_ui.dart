@@ -1,10 +1,13 @@
-// version 3.0 Page intro
+// version 4.0 Page intro
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:introduction_app_2/bloc/intro_bloc/intro_bloc.dart';
 import 'package:introduction_app_2/cubit/intro_cubit.dart';
+import 'package:introduction_app_2/events/intro_event/intro_event.dart';
+import 'package:introduction_app_2/states/intro_state/intro_state.dart';
 import 'package:lottie/lottie.dart';
-import 'helper/strings.dart';
-import 'home.dart';
+import '../../helper/strings.dart';
+import '../../home.dart';
 
 class Intro extends StatelessWidget {
   const Intro({Key? key}) : super(key: key);
@@ -13,8 +16,8 @@ class Intro extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: BlocProvider<IntroCubit>(
-        create: (context) => IntroCubit(),
+      home: BlocProvider(
+        create: (context) => IntroBloc(IntroInitialState()),
         child: const IntroPage(),
       ),
     );
@@ -29,13 +32,14 @@ class IntroPage extends StatefulWidget {
 }
 
 class _IntroPageState extends State<IntroPage> {
-  // Initial Page Controller
+  /// Initial Page Controller
   late PageController _pageController;
-  // Initial Current Index Page Controller
+
+  /// Initial Current Index Page Controller
   int currentIndex = 0;
 
   ///***************************************************************
-  // Initial Page Controller
+  /// Initial Page Controller
   ///***************************************************************
   @override
   void initState() {
@@ -44,7 +48,7 @@ class _IntroPageState extends State<IntroPage> {
   }
 
   ///***************************************************************
-  // Dispose Page Controller
+  /// Dispose Page Controller
   ///***************************************************************
   @override
   void dispose() {
@@ -59,12 +63,12 @@ class _IntroPageState extends State<IntroPage> {
         children: <Widget>[
           Center(
             ///***************************************************************
-            // Slider Widget
+            /// Slider Widget
             ///***************************************************************
             child: PageView(
               // تابعی که وقتی صفحه عوض شد فراخوانی میشود
               onPageChanged: (int page) {
-                BlocProvider.of<IntroCubit>(context).falseEndPageFlag();
+                // BlocProvider.of<IntroCubit>(context).falseEndPageFlag();
                 // ست کردن تعداد دات های صفحه بعد از تغییر صفحه
                 currentIndex = page;
                 setState(() {
@@ -81,7 +85,10 @@ class _IntroPageState extends State<IntroPage> {
                 // }
                 // وقتی به صفحه آخر میرسیم
                 if (page == 5 - 1) {
-                  BlocProvider.of<IntroCubit>(context).trueEndPageFlag();
+                  // BlocProvider.of<IntroCubit>(context).trueEndPageFlag();
+                  context.read<IntroBloc>().add(TrueFlagEndPageEvent());
+                } else {
+                  context.read<IntroBloc>().add(FalseFlagEndPageEvent());
                 }
               },
               // کنترولر اسلایدر
@@ -118,7 +125,7 @@ class _IntroPageState extends State<IntroPage> {
           ),
 
           ///***************************************************************
-          // Indicator Widget
+          /// Indicator Widget
           ///***************************************************************
           Align(
             alignment: Alignment.bottomCenter,
@@ -134,125 +141,32 @@ class _IntroPageState extends State<IntroPage> {
           ),
 
           ///***************************************************************
-          // Button Skip Widget
+          /// Button Skip Widget
           ///***************************************************************
-          BlocBuilder<IntroCubit, IntroState>(builder: (context, state) {
-            // Not End Page => Show >> Skip Button + Next Button
-            if (state.wasEndPage == false) {
-              return Visibility(
-                visible: true,
-                child: Padding(
-                  padding: const EdgeInsets.only(
-                    left: 20,
-                    bottom: 5,
-                  ),
-                  child: Align(
-                    alignment: Alignment.bottomLeft,
-                    child: TextButton(
-                      onPressed: () {
-                        setState(() {
-                          _pageController.jumpToPage(5 - 1);
-                        });
-                      },
-                      child: Text(
-                        Strings.skip,
-                        style: const TextStyle(
-                          color: Color(0XFF7D818A),
-                          fontFamily: 'ShabnamBold',
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            }
-            // End Page => Show >> Done Button
-            else if (state.wasEndPage == true) {
-              return Visibility(
-                visible: false,
-                child: Padding(
-                  padding: const EdgeInsets.only(
-                    left: 20,
-                    bottom: 5,
-                  ),
-                  child: Align(
-                    alignment: Alignment.bottomLeft,
-                    child: TextButton(
-                      onPressed: () {
-                        setState(() {
-                          _pageController.jumpToPage(5 - 1);
-                        });
-                      },
-                      child: Text(
-                        Strings.skip,
-                        style: const TextStyle(
-                          color: Color(0XFF7D818A),
-                          fontFamily: 'ShabnamBold',
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            }
-            // Initial State => Show >> Skip Button + Next Button
-            else {
-              return Visibility(
-                visible: true,
-                child: Padding(
-                  padding: const EdgeInsets.only(
-                    left: 20,
-                    bottom: 5,
-                  ),
-                  child: Align(
-                    alignment: Alignment.bottomLeft,
-                    child: TextButton(
-                      onPressed: () {
-                        setState(() {
-                          _pageController.jumpToPage(5 - 1);
-                        });
-                      },
-                      child: Text(
-                        Strings.skip,
-                        style: const TextStyle(
-                          color: Color(0XFF7D818A),
-                          fontFamily: 'ShabnamBold',
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            }
-          }),
 
-          ///***************************************************************
-          // Next Button Widget
-          ///***************************************************************
-          BlocBuilder<IntroCubit, IntroState>(
-            builder: (context, state) {
-              // Not End Page => Show >> Skip Button + Next Button
-              if (state.wasEndPage == false) {
+          Builder(
+            builder: (BuildContext context) {
+              final visibilityState = context.watch<IntroBloc>().state;
+
+              /// End Page => Show Only >> Done Button
+              if (visibilityState is TrueFlagEndPageState) {
                 return Visibility(
-                  visible: true,
+                  visible: false,
                   child: Padding(
                     padding: const EdgeInsets.only(
-                      right: 20,
+                      left: 20,
                       bottom: 5,
                     ),
                     child: Align(
-                      alignment: Alignment.bottomRight,
+                      alignment: Alignment.bottomLeft,
                       child: TextButton(
                         onPressed: () {
-                          _pageController.nextPage(
-                              duration: const Duration(milliseconds: 300),
-                              curve: Curves.easeIn);
+                          setState(() {
+                            _pageController.jumpToPage(5 - 1);
+                          });
                         },
                         child: Text(
-                          Strings.next,
+                          Strings.skip,
                           style: const TextStyle(
                             color: Color(0XFF7D818A),
                             fontFamily: 'ShabnamBold',
@@ -264,8 +178,81 @@ class _IntroPageState extends State<IntroPage> {
                   ),
                 );
               }
-              // End Page => Show >> Done Button
-              if (state.wasEndPage == true) {
+
+              /// Not End Page => => Show >> Skip Button + Next Button
+              else if (visibilityState is FalseFlagEndPageEvent) {
+                return Visibility(
+                  visible: true,
+                  child: Padding(
+                    padding: const EdgeInsets.only(
+                      left: 20,
+                      bottom: 5,
+                    ),
+                    child: Align(
+                      alignment: Alignment.bottomLeft,
+                      child: TextButton(
+                        onPressed: () {
+                          setState(() {
+                            _pageController.jumpToPage(5 - 1);
+                          });
+                        },
+                        child: Text(
+                          Strings.skip,
+                          style: const TextStyle(
+                            color: Color(0XFF7D818A),
+                            fontFamily: 'ShabnamBold',
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }
+
+              /// Initial State => Show >> Skip Button + Next Button
+              else {
+                return Visibility(
+                  visible: true,
+                  child: Padding(
+                    padding: const EdgeInsets.only(
+                      left: 20,
+                      bottom: 5,
+                    ),
+                    child: Align(
+                      alignment: Alignment.bottomLeft,
+                      child: TextButton(
+                        onPressed: () {
+                          setState(() {
+                            _pageController.jumpToPage(5 - 1);
+                          });
+                        },
+                        child: Text(
+                          Strings.skip,
+                          style: const TextStyle(
+                            color: Color(0XFF7D818A),
+                            fontFamily: 'ShabnamBold',
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }
+            },
+          ),
+
+          ///***************************************************************
+          /// Next Button Widget
+          ///***************************************************************
+
+          Builder(
+            builder: (BuildContext context) {
+              final visibilityState = context.watch<IntroBloc>().state;
+
+              /// End Page => Show Only >> Done Button
+              if (visibilityState is TrueFlagEndPageState) {
                 return Visibility(
                   visible: false,
                   child: Padding(
@@ -294,7 +281,39 @@ class _IntroPageState extends State<IntroPage> {
                   ),
                 );
               }
-              // Initial State => Show >> Skip Button + Next Button
+
+              /// Not End Page => Show >> Skip Button + Next Button
+              else if (visibilityState is FalseFlagEndPageEvent) {
+                return Visibility(
+                  visible: true,
+                  child: Padding(
+                    padding: const EdgeInsets.only(
+                      right: 20,
+                      bottom: 5,
+                    ),
+                    child: Align(
+                      alignment: Alignment.bottomRight,
+                      child: TextButton(
+                        onPressed: () {
+                          _pageController.nextPage(
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeIn);
+                        },
+                        child: Text(
+                          Strings.next,
+                          style: const TextStyle(
+                            color: Color(0XFF7D818A),
+                            fontFamily: 'ShabnamBold',
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }
+
+              /// Initial State => Show >> Skip Button + Next Button
               else {
                 return Visibility(
                   visible: true,
@@ -328,42 +347,15 @@ class _IntroPageState extends State<IntroPage> {
           ),
 
           ///***************************************************************
-          // Done Button Widget
+          /// Done Button Widget
           ///***************************************************************
-          BlocBuilder<IntroCubit, IntroState>(
-            builder: (context, state) {
-              // Not End Page => Show >> Skip Button + Next Button
-              if (state.wasEndPage == false) {
-                return Visibility(
-                  visible: false,
-                  child: Padding(
-                    padding: const EdgeInsets.only(
-                      right: 20,
-                      bottom: 5,
-                    ),
-                    child: Align(
-                      alignment: Alignment.bottomRight,
-                      child: TextButton(
-                        onPressed: () {
-                          _pageController.nextPage(
-                              duration: const Duration(milliseconds: 300),
-                              curve: Curves.easeIn);
-                        },
-                        child: Text(
-                          Strings.done,
-                          style: const TextStyle(
-                            color: Color(0XFF7D818A),
-                            fontFamily: 'ShabnamBold',
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }
-              // End Page => Show >> Done Button
-              if (state.wasEndPage == true) {
+
+          Builder(
+            builder: (BuildContext context) {
+              final visibilityState = context.watch<IntroBloc>().state;
+
+              /// End Page => Show Only >> Done Button
+              if (visibilityState is TrueFlagEndPageState) {
                 return Visibility(
                   visible: true,
                   child: Padding(
@@ -400,7 +392,47 @@ class _IntroPageState extends State<IntroPage> {
                   ),
                 );
               }
-              // Initial State => Show >> Skip Button + Next Button
+
+              /// Not End Page => Show >> Skip Button + Next Button
+              else if (visibilityState is FalseFlagEndPageEvent) {
+                return Visibility(
+                  visible: false,
+                  child: Padding(
+                    padding: const EdgeInsets.only(
+                      right: 20,
+                      bottom: 5,
+                    ),
+                    child: Align(
+                      alignment: Alignment.bottomRight,
+                      child: TextButton(
+                        onPressed: () {
+                          _pageController.nextPage(
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeIn);
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => BlocProvider.value(
+                                value: BlocProvider.of<IntroCubit>(context),
+                                child: const HomePage(),
+                              ),
+                            ),
+                          );
+                        },
+                        child: Text(
+                          Strings.done,
+                          style: const TextStyle(
+                            color: Color(0XFF7D818A),
+                            fontFamily: 'ShabnamBold',
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }
+
+              /// Initial State => Show >> Skip Button + Next Button
               else {
                 return Visibility(
                   visible: false,
@@ -438,7 +470,7 @@ class _IntroPageState extends State<IntroPage> {
   }
 
   ///***************************************************************
-  // Initial Intro Slide Widget
+  /// Initial Intro Slide Widget
   ///***************************************************************
   Widget introSlide({
     required String jsonAnimation,
@@ -488,7 +520,7 @@ class _IntroPageState extends State<IntroPage> {
   }
 
   ///***************************************************************
-  // Initial Indicator Widget
+  /// Initial Indicator Widget
   ///***************************************************************
   Widget _indicator(bool isActive) {
     return AnimatedContainer(
@@ -511,7 +543,7 @@ class _IntroPageState extends State<IntroPage> {
   }
 
   ///***************************************************************
-  // Initial List of Indicator Widget
+  /// Initial List of Indicator Widget
   ///***************************************************************
   List<Widget> _buildIndicator() {
     List<Widget> indicators = [];
